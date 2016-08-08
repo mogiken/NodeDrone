@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ja" ng-app="app">
+<meta charset="utf-8">
+<title>コミュニケーション・ドローン</title>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular-route.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.0/css/bootstrap.min.css"></link>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.0/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.13.4/ui-bootstrap-tpls.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/angular-i18n/1.4.6/angular-locale_ja-jp.js"></script>
+<script  defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDAxmVa8D27BpPIsHbHre852Ab7C9Kxu5w"></script>
+<script src="./angular-state-loader/angular-state-loader.js" type="text/javascript"></script>
+<link href="./angular-state-loader/angular-state-loader.css" type="text/css" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+<script>
+  var app = angular.module('app', [ 'ngRoute','ec.stateloader']);
+
+  app.config(function($routeProvider) {
+    $routeProvider.when('/top/', {
+      templateUrl: 'top.html', controller: 'topCtrl'
+    }).otherwise({
+      redirectTo: '/top/'
+    });
+  });
+
+
+  //TOP
+  app.controller('topCtrl', function($scope, $routeParams,$http,$location) {
+    $scope.showLoader = false;//ローダーの表示
+    $scope.state ="停止中";
+
+    var recognition = new webkitSpeechRecognition();
+    recognition.lang = "ja-JP" //日本語
+    recognition.continuous = true //連続認識
+
+    //話し声の認識中
+    recognition.onsoundstart = function(){
+        $scope.state ="認識中";
+        $scope.$apply();
+    };
+    //マッチする認識が無い
+    recognition.onnomatch = function(){
+        $scope.recognizedText = "もう一度試してください";
+        $scope.$apply();
+    };
+    //エラー
+    recognition.onerror= function(){
+      $scope.recognizedText = "エラー";
+      $scope.$apply();
+    };
+    //話し声の認識終了
+    recognition.onsoundend = function(){
+      $scope.state ="停止中";
+      $scope.recognizedText = "";
+      $scope.$apply();
+    };
+    //認識が終了したときのイベント
+    recognition.onresult = function(event){
+        $scope.responseText = "";
+        var results = event.results;
+        for (var i = event.resultIndex; i<results.length; i++){
+            $scope.recognizedText =results[i][0].transcript;
+        }
+        if($scope.recognizedText.match(/飛べ/)) $scope.takeoff();
+        if($scope.recognizedText.match(/着陸/)) $scope.land();
+        if($scope.recognizedText.match(/東京/) && $scope.recognizedText.match(/気温/)){
+          $http.get('http://api.openweathermap.org/data/2.5/weather?q=Tokyo&units=metric&appid=8f1fb1126a4adec325d437e07fb0f959')
+            .success(function(response) {
+              //気温
+              var temp = parseInt(response.main.temp);
+              var temp10 = parseInt(temp / 10);//１０の位の数値
+              var temp1 = parseInt(temp % 10);//１の位の数値
+              $scope.responseText = temp +"度です。";
+              $http.get('/command/temp/'+temp10+'/'+temp1);
+            });
+        }
+        if($scope.recognizedText.match(/軽井沢/) && $scope.recognizedText.match(/気温/)){
+          $http.get('http://api.openweathermap.org/data/2.5/weather?q=Karuizawa&units=metric&appid=8f1fb1126a4adec325d437e07fb0f959')
+            .success(function(response) {
+              //気温
+              var temp = parseInt(response.main.temp);
+              var temp10 = parseInt(temp / 10);//１０の位の数値
+              var temp1 = parseInt(temp % 10);//１の位の数値
+              $scope.responseText = temp +"度です。";
+              $http.get('/command/temp/'+temp10+'/'+temp1);
+            });
+        }
+        $scope.$apply();
+
+    };
+
+    $scope.start = function() {
+      recognition.start();
+      return;
+    };
+    $scope.stop = function() {
+      recognition.stop();
+      return;
+    };
+    $scope.takeoff = function() {
+      $http.get('/command/takeoff');
+      return;
+    };
+    $scope.land = function() {
+      $http.get('/command/land');
+      return;
+    };
+
+
+  });
+
+
+</script>
+<body>
+<div ng-view></div>
+</body>
+
+</html>

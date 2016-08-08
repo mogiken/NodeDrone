@@ -1,0 +1,31 @@
+/* ANGULAR STATE LOADER */
+.angular-state-loader {
+    position: absolute;
+    padding: 50px;
+    text-align: center;
+    top: 0;
+    left: 0;
+    height: 300%;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.8);
+    z-index: 10000;
+}
+
+@-webkit-keyframes rotate {
+    0% {
+        -webkit-transform: rotate(0deg) scale(5);
+    }
+    25% {
+        -webkit-transform: rotate(90deg) scale(0.7);
+    }
+    100% {
+        -webkit-transform: rotate(360deg) scale(5);
+    }
+}
+
+.rotate-right {
+    -webkit-animation-name: rotate;
+    -webkit-animation-duration: 1s;
+    -webkit-animation-iteration-count: infinite;
+    -webkit-animation-timing-function: linear;
+}
